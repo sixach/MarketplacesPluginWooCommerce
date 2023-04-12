@@ -39,10 +39,16 @@ class PolylangHelper extends WpmlHelper
         foreach ($termIds as $locale => $termId) {
             $term = get_term($termId);
             if ($term instanceof WP_Term) {
-                $terms[$locale] = $term->name;
+                $terms[static::getIsoLang($locale)] = $term->name;
             }
         }
         return $terms;
+    }
+
+    public static function getIsoLang($code) {
+        $code = explode('-', $code);
+        $code = !empty($code[1]) ? $code[1] : $code[0];
+        return $code;
     }
 
     /**
@@ -68,13 +74,17 @@ class PolylangHelper extends WpmlHelper
      *
      * @return array
      */
-    public static function getActiveLanguages(): array
+    public static function getActiveLanguages($iso = true): array
     {
         $languagesOutput = [];
         $polylangLanguages = function_exists('pll_the_languages') ? pll_the_languages(['raw' => true]) : [];
         if (count($polylangLanguages) > 0) {
             foreach ($polylangLanguages as $polylangLanguageArray) {
-                $languagesOutput[$polylangLanguageArray['slug']] = $polylangLanguageArray['name'];
+                if($iso) {
+                    $languagesOutput[static::getIsoLang($polylangLanguageArray['slug'])] = $polylangLanguageArray['name'];
+                } else {
+                    $languagesOutput[$polylangLanguageArray['slug']] = $polylangLanguageArray['name'];
+                }
             }
         }
         return $languagesOutput;
@@ -85,7 +95,7 @@ class PolylangHelper extends WpmlHelper
      */
     public static function getDefaultLanguage(): string
     {
-        return function_exists('pll_default_language') ? strval(pll_default_language()) : '';
+        return function_exists('pll_default_language') ? static::getIsoLang(strval(pll_default_language())) : '';
     }
 
     /**
@@ -96,11 +106,11 @@ class PolylangHelper extends WpmlHelper
     {
         $ids = [];
         if (function_exists('pll_get_term')) {
-            $languages = array_keys(static::getActiveLanguages());
+            $languages = array_keys(static::getActiveLanguages(false));
             foreach ($languages as $language) {
                 $termId = intval(pll_get_term($termId, $language));
                 if ($termId > 0) {
-                    $ids[$language] = $termId;
+                    $ids[static::getIsoLang($language)] = $termId;
                 }
             }
         }
@@ -115,11 +125,11 @@ class PolylangHelper extends WpmlHelper
     {
         $ids = [];
         if (function_exists('pll_get_post')) {
-            $languages = array_keys(static::getActiveLanguages());
+            $languages = array_keys(static::getActiveLanguages(false));
             foreach ($languages as $language) {
                 $termId = intval(pll_get_post($postId, $language));
                 if ($termId > 0) {
-                    $ids[$language] = $termId;
+                    $ids[static::getIsoLang($language)] = $termId;
                 }
             }
         }
